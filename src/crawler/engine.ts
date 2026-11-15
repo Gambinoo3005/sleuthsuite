@@ -197,10 +197,11 @@ export class CrawlWorker {
         const origin = settings.mode === "list" ? new URL(job.url).origin : run.origin;
         if (inScope(result.location, origin, settings)) queue(result.location, job.depth, job.hop + 1, "redirect", job.url);
       }
-      if (settings.mode !== "site") return;
+      if (settings.mode === "list" && !settings.expandList) return;
+      const origin = settings.mode === "list" ? new URL(job.url).origin : run.origin;
       const pageNofollow = result.facts?.robots.some((directive) => directive === "nofollow" || directive === "none");
       for (const link of result.links ?? []) {
-        if (!inScope(link.target, run.origin, settings) ||
+        if (!inScope(link.target, origin, settings) ||
             (!settings.followNofollow && (link.nofollow || pageNofollow))) continue;
         if (job.depth < settings.depth) queue(link.target, job.depth + 1, 0, "link", job.url);
         else if (!one(this.db, "SELECT 1 FROM urls WHERE run=? AND url=?", run.id, link.target)) {

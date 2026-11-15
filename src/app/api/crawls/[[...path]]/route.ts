@@ -1,9 +1,10 @@
-import { database, createRun, getRun, recentRuns, setRunState } from "@/db";
+import { database, crawlInputRows, createRun, getRun, recentRuns, setRunState } from "@/db";
 import { parseSettings } from "@/crawler/urls";
 import { redirectTrace } from "@/crawler/rules";
 import { sitemapXml } from "@/crawler/xml";
 import { compareRuns, evidence, findings, issueGroups, makeExport, pages, pathGroups, resources, xmlCandidates } from "@/queries";
 import { SAMPLE_ID, sampleDatabase } from "@/sample";
+import { fetchGoogleSheet } from "@/google-sheet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ async function readBody(request: Request) {
     const { done, value } = await reader.read();
     if (done) break;
     size += value.length;
-    if (size > 700_000) {
+    if (size > 4_000_000) {
       await reader.cancel();
       throw new Error("The request body is too large.");
     }
@@ -91,6 +92,11 @@ export async function POST(request: Request, context: Context) {
   const path = (await context.params).path ?? [];
   const db = database();
   try {
+    if (path.length === 1 && path[0] === "google-sheet") {
+      const body = await readBody(request) as { url?: unknown } | null;
+      if (typeof body?.url !== "string") return error("Enter a Google Sheets link.", 400);
+      return json(await fetchGoogleSheet(body.url, request.signal));
+    }
     if (!path.length) {
       const body = await readBody(request);
       const settings = parseSettings(body);
@@ -105,7 +111,7 @@ export async function POST(request: Request, context: Context) {
     if (path.length !== 2 || !uuid.test(id) || !getRun(db, id)) return error("Crawl not found.", 404);
     if (action === "rerun") {
       try {
-        return json({ id: createRun(db, getRun(db, id)!.settings) }, 201);
+        return json({ id: createRun(db, { ...getRun(db, id)!.settings, inputRows: crawlInputRows(db, id) }) }, 201);
       } catch (problem) {
         if (problem instanceof Error && /UNIQUE constraint failed/.test(problem.message)) return error("Finish or stop the active crawl before starting another.", 409);
         throw problem;

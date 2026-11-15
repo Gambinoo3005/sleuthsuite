@@ -1,27 +1,41 @@
 import type { SQLInputValue } from "node:sqlite";
-import { one, rows } from "./db.ts";
+import { one, rows, runRow } from "./db.ts";
 import type { Database } from "./db.ts";
-import type { Discovery, Evidence, Finding, IssueGroup, Link, ListResult, PageFacts, PageRecord, RenderEvidence, SitemapRecord, UrlState } from "./model.ts";
+import type { CrawlSettings, Discovery, Evidence, Finding, IssueGroup, Link, ListResult, PageFacts, PageRecord, RenderEvidence, ReviewedInputRow, SitemapRecord, UrlState } from "./model.ts";
 import { RULES } from "./model.ts";
+import { inScope } from "./crawler/urls.ts";
 
 interface ResultRow {
   url: string; state: UrlState; http: number | null; depth: number; type: string; ms: number | null; bytes: number;
   issue: string | null; location: string | null; facts: string | null; raw: string | null; note: string | null;
-  inlinks: number; sources: string | null; headers: string;
+  inlinks: number; sources: string | null; discovery_source: string | null; input_ids: string | null; headers: string;
 }
 
 const selection = `u.*, (SELECT COUNT(DISTINCT l.source) FROM links l WHERE l.run=u.run AND l.target=u.url) inlinks,
-  (SELECT group_concat(DISTINCT d.kind) FROM discoveries d WHERE d.run=u.run AND d.url=u.url) sources`;
+  (SELECT group_concat(DISTINCT d.kind) FROM discoveries d WHERE d.run=u.run AND d.url=u.url) sources,
+  (SELECT d.source FROM discoveries d WHERE d.run=u.run AND d.url=u.url AND d.source<>'' ORDER BY d.kind,d.source LIMIT 1) discovery_source,
+  (SELECT group_concat(i.id, ', ' ORDER BY i.id) FROM input_rows i WHERE i.run=u.run AND i.url=u.url) input_ids`;
 const escapeLike = (value: string) => "%" + value.trim().slice(0, 200).replace(/[\\%_]/g, "\\$&") + "%";
 
-function readPage(row: ResultRow): PageRecord {
+function readPage(row: ResultRow, settings?: CrawlSettings): PageRecord {
+  const sources = row.sources ? row.sources.split(",") as Discovery[] : [];
+  const scopeDecision = sources.includes("seed")
+    ? settings?.mode === "list" ? "Explicit list entry" : "Starting URL"
+    : !sources.length ? "Not recorded"
+    : settings?.mode === "list" ? "Same origin as source URL"
+    : settings?.scope === "path" && settings.path !== "/" ? `Within ${settings.path}` : "Within starting origin";
   return {
     url: row.url, state: row.state, http: row.http, depth: row.depth, type: row.type,
     ms: row.ms, bytes: row.bytes, issue: row.issue, location: row.location, note: row.note,
     facts: row.facts ? JSON.parse(row.facts) as PageFacts : null,
     raw: row.raw ? JSON.parse(row.raw) as RenderEvidence : null,
-    inlinks: row.inlinks, sources: row.sources ? row.sources.split(",") as Discovery[] : [],
+    inlinks: row.inlinks, sources, scopeDecision, discoverySource: row.discovery_source ?? undefined,
   };
+}
+
+function savedSettings(db: Database, id: string): CrawlSettings | undefined {
+  const run = runRow(db, id);
+  return run ? JSON.parse(run.settings) as CrawlSettings : undefined;
 }
 
 function pageBounds(params: URLSearchParams, total: number) {
@@ -61,7 +75,8 @@ export function pages(db: Database, id: string, params: URLSearchParams, unpaged
   const sql = `SELECT ${selection} FROM urls u WHERE ${where} ORDER BY ${order} ${direction},u.url`;
   const records = unpaged ? rows<ResultRow>(db, sql, ...values) :
     rows<ResultRow>(db, sql + " LIMIT ? OFFSET ?", ...values, size, (page - 1) * size);
-  return { items: records.map(readPage), total, page, size };
+  const settings = savedSettings(db, id);
+  return { items: records.map((row) => readPage(row, settings)), total, page, size };
 }
 
 interface LinkRow extends Omit<Link, "nofollow"> { nofollow: number }
@@ -70,11 +85,28 @@ const linkValue = (row: LinkRow): Link => ({ ...row, nofollow: Boolean(row.nofol
 export function evidence(db: Database, id: string, url: string): Evidence | undefined {
   const row = one<ResultRow>(db, `SELECT ${selection} FROM urls u WHERE u.run=? AND u.url=?`, id, url);
   if (!row) return undefined;
+  const run = runRow(db, id)!;
+  const settings: CrawlSettings = JSON.parse(run.settings);
+  const page = readPage(row, settings);
   const outgoingCount = one<{ count: number }>(db, "SELECT COUNT(*) count FROM links WHERE run=? AND source=?", id, url)!.count;
+  const origin = settings.mode === "site" ? run.origin : new URL(url).origin;
+  const pageNofollow = page.facts?.robots.some((directive) => directive === "nofollow" || directive === "none");
+  const outgoing = rows<LinkRow & { followed: number }>(db, `SELECT l.source,l.target,l.original,l.anchor,l.placement,l.nofollow,
+    EXISTS(SELECT 1 FROM discoveries d WHERE d.run=l.run AND d.url=l.target AND d.kind='link' AND d.source=l.source) followed
+    FROM links l WHERE l.run=? AND l.source=? ORDER BY l.target,l.anchor LIMIT 150`, id, url)
+    .map(({ followed, ...link }) => {
+      const scopeDecision = followed ? "Discovered from this page"
+        : new URL(link.target).origin !== origin ? "Outside crawl origin"
+        : !inScope(link.target, origin, settings) ? "Outside starting path"
+        : settings.mode === "list" && !settings.expandList ? "List discovery is off"
+        : !settings.followNofollow && (pageNofollow || link.nofollow) ? "Nofollow discovery is off"
+        : row.depth >= settings.depth ? "At the link depth limit" : "In scope · discovery not recorded";
+      return { ...linkValue(link), scopeDecision };
+    });
   return {
-    ...readPage(row),
+    ...page,
     incoming: rows<LinkRow>(db, "SELECT source,target,original,anchor,placement,nofollow FROM links WHERE run=? AND target=? ORDER BY source,anchor LIMIT 150", id, url).map(linkValue),
-    outgoing: rows<LinkRow>(db, "SELECT source,target,original,anchor,placement,nofollow FROM links WHERE run=? AND source=? ORDER BY target,anchor LIMIT 150", id, url).map(linkValue),
+    outgoing,
     outgoingCount,
     headers: JSON.parse(row.headers),
   };
@@ -153,16 +185,27 @@ export function csv(headers: string[], records: Iterable<Cell[]>) {
 }
 
 export function makeExport(db: Database, id: string, kind: string, params: URLSearchParams) {
+  if (kind === "input-rows") {
+    const records = db.prepare(`SELECT i.*, u.http, u.state, u.location FROM input_rows i
+      LEFT JOIN urls u ON u.run=i.run AND u.url=i.url WHERE i.run=? ORDER BY i.id`).iterate(id) as Iterable<ReviewedInputRow & {
+        http: number | null; state: UrlState | null; location: string | null;
+      }>;
+    return csv(["Input row ID", "Source", "Source row", "Original input", "Normalized URL", "Input status", "HTTP", "Crawl state", "Redirect"], (function* () {
+      for (const row of records) yield [row.id, row.source, row.row, row.value, row.url, row.status, row.http, row.state, row.location];
+    })());
+  }
   if (kind === "urls") {
     const { where, values } = urlConditions(id, params);
     const records = db.prepare(`SELECT ${selection} FROM urls u WHERE ${where} ORDER BY u.url`).iterate(...values) as Iterable<ResultRow>;
-    return csv(["URL", "HTTP", "State", "Title", "Description", "H1", "Canonical", "Robots", "Depth", "Inlinks", "Discovery", "Redirect", "Response ms", "Bytes", "Missing alt", "Note", "Extraction"], (function* () {
+    const settings = savedSettings(db, id);
+    return csv(["URL", "HTTP", "State", "Title", "Description", "H1", "Canonical", "Robots", "Depth", "Inlinks", "Discovery", "Redirect", "Response ms", "Bytes", "Missing alt", "Note", "Extraction", "Discovery source URL", "Scope decision", "Input row IDs"], (function* () {
       for (const row of records) {
-        const page = readPage(row);
+        const page = readPage(row, settings);
         const fact = page.facts;
         yield [page.url, page.http, page.state, fact?.title ?? null, fact?.description ?? null, fact?.h1.join(" | ") ?? null, fact?.canonical.join(" | ") ?? null,
           fact?.robots.join(", ") ?? null, page.depth, page.inlinks, page.sources.join(", "), page.location, page.ms, page.bytes, fact?.missingAlt ?? null,
-          page.note, fact && Object.keys(fact.extracted).length ? JSON.stringify(fact.extracted) : null];
+          page.note, fact && Object.keys(fact.extracted).length ? JSON.stringify(fact.extracted) : null,
+          page.discoverySource ?? null, page.scopeDecision ?? null, row.input_ids];
       }
     })());
   }

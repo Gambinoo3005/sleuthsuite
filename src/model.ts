@@ -3,6 +3,15 @@ export type Rendering = "html" | "chromium";
 export type RunState = "queued" | "running" | "pausing" | "paused" | "stopping" | "stopped" | "complete" | "failed";
 export type UrlState = "queued" | "fetching" | "done" | "failed" | "skipped" | "cancelled";
 export type Discovery = "seed" | "link" | "redirect" | "sitemap";
+export const discoveryLabels: Record<Discovery, string> = {
+  seed: "Seed", link: "Link", redirect: "Redirect", sitemap: "Sitemap",
+};
+export interface InputRow { source: string; row: number; value: string }
+export interface ReviewedInputRow extends InputRow {
+  id: number;
+  url: string | null;
+  status: "ready" | "duplicate" | "rejected";
+}
 
 export interface ExtractionRule {
   name: string;
@@ -22,6 +31,7 @@ export interface CrawlSettings {
   rendering: Rendering;
   sitemap: string;
   followNofollow: boolean;
+  expandList?: boolean;
   extract: ExtractionRule[];
 }
 
@@ -85,6 +95,7 @@ export interface Link {
   anchor: string;
   placement: string;
   nofollow: boolean;
+  scopeDecision?: string;
 }
 
 export interface PageRecord {
@@ -102,6 +113,8 @@ export interface PageRecord {
   note: string | null;
   inlinks: number;
   sources: Discovery[];
+  discoverySource?: string;
+  scopeDecision?: string;
 }
 
 export interface Evidence extends PageRecord {

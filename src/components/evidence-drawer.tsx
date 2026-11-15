@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, ChevronRight, Download, ExternalLink, Link2, X } from "lucide-react";
 import type { Evidence, Link, RenderEvidence } from "@/model";
+import { discoveryLabels } from "@/model";
 import type { RedirectHop } from "@/crawler/rules";
 import { api, prettyNumber, ResponseStatus } from "./common";
 
@@ -54,7 +55,9 @@ export function EvidenceDrawer({ id, url, close, inspect }: { id: string; url: s
             <dt>Response</dt><dd>{page.http ? `HTTP ${page.http}` : page.state}</dd>
             <dt>Content type</dt><dd>{page.type || "Unknown"}</dd>
             <dt>Fetch time</dt><dd>{page.ms == null ? "—" : `${prettyNumber(page.ms)} ms`}</dd>
-            <dt>Discovery</dt><dd>{page.sources.join(", ") || "—"}</dd>
+            <dt>Discovery</dt><dd>{page.sources.map((kind) => discoveryLabels[kind]).join(", ") || "—"}</dd>
+            {page.discoverySource && <><dt>Discovered from</dt><dd>{page.discoverySource}</dd></>}
+            <dt>Scope decision</dt><dd>{page.scopeDecision}</dd>
             <dt>Depth</dt><dd>{page.depth}</dd>
             {page.facts && <>
               <dt>Title</dt><dd>{page.facts.title || "Missing or empty"}</dd>
@@ -99,7 +102,7 @@ function LinkEvidence({ item, incoming, inspect }: { item: Link; incoming: boole
   return <div className="evidence-link">
     {incoming ? <ArrowDownRight size={17} /> : <ArrowUpRight size={17} />}
     <div><button className="text-button mono" onClick={() => inspect(url)}>{url}</button>
-      <small>{item.placement} · {item.anchor || "(no anchor text)"}{item.nofollow ? " · nofollow" : ""}</small></div>
+      <small>{item.placement} · {item.anchor || "(no anchor text)"}{item.nofollow ? " · nofollow" : ""}{item.scopeDecision && ` · ${item.scopeDecision}`}</small></div>
     <ChevronRight size={14} />
   </div>;
 }

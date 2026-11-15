@@ -1,9 +1,10 @@
-import type { CrawlSettings } from "../model.ts";
+import type { CrawlSettings, InputRow, ReviewedInputRow } from "../model.ts";
 
 export const USER_AGENT = "SleuthSuite/1.0";
 export const MAX_LINKS = 5_000;
 export const MAX_URL_LIST_LENGTH = 645_000;
 export const MAX_CRAWL_URLS = 10_000;
+export const MAX_INPUT_ROWS = 20_000;
 
 export function normalizeUrl(value: string, base?: string): string | null {
   if (!value || value.length > 4096) return null;
@@ -32,18 +33,48 @@ export function normalizeCrawlUrl(input: string): string | null {
   return hostname.length <= 253 && labels.length > 1 && validLabels && /^(?:[a-z]{2,63}|xn--[a-z0-9-]+)$/.test(suffix) ? url : null;
 }
 
-export function parseSettings(input: unknown): CrawlSettings {
+export function pastedInput(text: string): InputRow[] {
+  return text.split(/\r\n|\r|\n/).flatMap((value, index) =>
+    value.trim() ? [{ source: "Pasted list", row: index + 1, value }] : []);
+}
+
+export function reviewInput(input: InputRow[]): ReviewedInputRow[] {
+  const seen = new Set<string>();
+  return input.map((row, index) => {
+    const url = normalizeCrawlUrl(row.value);
+    const status = !url ? "rejected" : seen.has(url) ? "duplicate" : "ready";
+    if (url) seen.add(url);
+    return { ...row, id: index + 1, url, status };
+  });
+}
+
+function validatedInput(input: unknown): ReviewedInputRow[] {
+  if (!Array.isArray(input) || input.length > MAX_INPUT_ROWS) throw new Error("Use at most 20,000 input rows.");
+  const rows = input.map((row: unknown): InputRow => {
+    if (!row || typeof row !== "object") throw new Error("Invalid input row.");
+    const { source, row: number, value } = row as Partial<InputRow>;
+    if (typeof source !== "string" || !source || source.length > 240 || typeof value !== "string" ||
+        typeof number !== "number" || !Number.isSafeInteger(number) || number < 1) throw new Error("Invalid input row.");
+    return { source, row: number, value };
+  });
+  if (rows.reduce((total, row) => total + row.value.length + 1, 0) > MAX_URL_LIST_LENGTH) throw new Error("Use a URL list smaller than 645 KB.");
+  return reviewInput(rows);
+}
+
+export function parseSettings(input: unknown): CrawlSettings & { inputRows?: ReviewedInputRow[] } {
   if (!input || typeof input !== "object") throw new Error("Enter a website address or URL list.");
   const data = input as Record<string, unknown>;
   const mode = data.mode === "list" ? "list" : "site";
   const text = typeof data.urls === "string" ? data.urls.trim() : "";
-  if (!text || text.length > MAX_URL_LIST_LENGTH) throw new Error("Enter a URL or a list smaller than 645 KB.");
-  const lines = text.split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+  const reviewed = mode === "list" && data.inputRows !== undefined ? validatedInput(data.inputRows) : undefined;
+  if ((!text && !reviewed) || text.length > MAX_URL_LIST_LENGTH) throw new Error("Enter a URL or a list smaller than 645 KB.");
+  const lines = pastedInput(text).map(({ value }) => value.trim());
   if (mode === "site" && lines.length !== 1) throw new Error("Website mode accepts one URL.");
   const urls = lines.map(normalizeCrawlUrl);
   const invalid = lines.filter((_, index) => urls[index] === null);
   if (invalid.length) throw new Error(`Enter a complete domain or a valid HTTP or HTTPS URL. Check: ${invalid.slice(0, 3).join(", ").slice(0, 200)}`);
-  const seeds = [...new Set(urls as string[])];
+  const seeds = reviewed ? reviewed.flatMap((row) => row.status === "ready" && row.url ? [row.url] : []) : [...new Set(urls as string[])];
+  if (!seeds.length) throw new Error("Add at least one valid URL.");
   const bounded = (key: string, fallback: number, lower: number, upper: number) => {
     const value = data[key] === "" || data[key] == null ? fallback : Number(data[key]);
     if (!Number.isInteger(value) || value < lower || value > upper) throw new Error(`${key} must be between ${lower} and ${upper}.`);
@@ -80,6 +111,8 @@ export function parseSettings(input: unknown): CrawlSettings {
     rate: bounded("rate", 2, 1, 15),
     rendering: data.rendering === "chromium" ? "chromium" : "html",
     followNofollow: data.followNofollow === true,
+    expandList: mode === "list" && data.expandList === true,
+    ...(mode === "list" ? { inputRows: reviewed ?? validatedInput(pastedInput(text)) } : {}),
     extract: rules,
   };
 }

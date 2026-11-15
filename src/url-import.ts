@@ -1,15 +1,45 @@
 import { parse } from "csv-parse/browser/esm/sync";
-import { MAX_CRAWL_URLS, MAX_URL_LIST_LENGTH, normalizeCrawlUrl } from "./crawler/urls.ts";
+import { MAX_CRAWL_URLS, MAX_INPUT_ROWS, MAX_URL_LIST_LENGTH, normalizeCrawlUrl } from "./crawler/urls.ts";
+import type { InputRow } from "./model.ts";
 
 const urlHeaders = new Set(["url", "urls", "address", "pageurl", "pageaddress", "websiteurl"]);
 
-function readColumn(text: string, delimiter: string): string[] {
+export function tableInput(source: string, rows: string[][], firstRow = 1): InputRow[] {
+  if (!rows.length) return [];
+  const headers = rows[0].map((cell) => cell.toLowerCase().replace(/[^a-z]/g, ""));
+  const column = headers.findIndex((header) => urlHeaders.has(header));
+  if (column < 0 && rows.some((row) => row.slice(1).some((cell) => cell.trim()))) {
+    throw new Error("Name the URL column “URL” or “Address” in a table with multiple columns.");
+  }
+  const start = column < 0 ? 0 : 1;
+  if (rows.length - start > MAX_INPUT_ROWS) throw new Error("Use at most 20,000 input rows.");
+  return rows.slice(start).map((row, index) => ({
+    source: source.slice(0, 240), row: firstRow + index + start, value: row[Math.max(0, column)] ?? "",
+  }));
+}
+
+export function readTextInput(filename: string, text: string): InputRow[] {
+  const extension = filename.toLowerCase().split(".").pop();
+  if (extension === "txt") {
+    return tableInput(filename, text.replace(/^\uFEFF/, "").split(/\r\n|\n|\r/).map((value) => [value]))
+      .filter((row) => row.value.trim());
+  }
+  if (extension !== "csv" && extension !== "tsv") throw new Error("Choose a CSV, TSV, TXT, XLSX, or XLS file.");
+  return tableInput(filename, parseTable(text, extension === "tsv" ? "\t" : ",", false));
+}
+
+export function parseTable(text: string, delimiter = ",", skipEmpty = false): string[][] {
   let rows: string[][];
   try {
-    rows = parse(text, { delimiter, bom: true, skip_empty_lines: true, relax_column_count: true, trim: true });
+    rows = parse(text, { delimiter, bom: true, skip_empty_lines: skipEmpty, relax_column_count: true, trim: true, to: MAX_INPUT_ROWS + 2 });
   } catch {
     throw new Error("This table could not be read. Check its delimiters and quoted cells.");
   }
+  return rows;
+}
+
+function readColumn(text: string, delimiter: string): string[] {
+  const rows = parseTable(text, delimiter, true);
   if (!rows.length) return [];
   const headers = rows[0].map((cell) => cell.toLowerCase().replace(/[^a-z]/g, ""));
   const column = headers.findIndex((header) => urlHeaders.has(header));

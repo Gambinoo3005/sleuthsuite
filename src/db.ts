@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { SQLInputValue } from "node:sqlite";
-import type { CrawlSettings, Discovery, Finding, Link, PageFacts, RenderEvidence, RunState, RunSummary, UrlState } from "./model.ts";
+import type { CrawlSettings, Discovery, Finding, Link, PageFacts, RenderEvidence, ReviewedInputRow, RunState, RunSummary, UrlState } from "./model.ts";
 
 export type Database = DatabaseSync;
 
@@ -64,6 +64,13 @@ export function openDatabase(path: string) {
       UNIQUE(run, source, target, original, anchor, placement, nofollow),
       FOREIGN KEY(run, source) REFERENCES urls(run, url) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS input_rows (
+      run TEXT NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+      id INTEGER NOT NULL, source TEXT NOT NULL, row INTEGER NOT NULL,
+      value TEXT NOT NULL, url TEXT, status TEXT NOT NULL,
+      PRIMARY KEY(run, id)
+    ) WITHOUT ROWID;
+    CREATE INDEX IF NOT EXISTS input_rows_url ON input_rows(run, url, id);
     CREATE INDEX IF NOT EXISTS link_targets ON links(run, target, source);
     CREATE TABLE IF NOT EXISTS alternates (
       run TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, lang TEXT NOT NULL,
@@ -116,13 +123,19 @@ export function runRow(db: Database, id: string) {
   return one<RunRow>(db, "SELECT * FROM runs WHERE id=?", id);
 }
 
-export function createRun(db: Database, settings: CrawlSettings) {
+export function crawlInputRows(db: Database, run: string) {
+  return rows<ReviewedInputRow>(db, "SELECT id,source,row,value,url,status FROM input_rows WHERE run=? ORDER BY id", run);
+}
+
+export function createRun(db: Database, { inputRows = [], ...settings }: CrawlSettings & { inputRows?: ReviewedInputRow[] }) {
   return transaction(db, () => {
     const id = randomUUID();
     db.prepare("INSERT INTO runs(id,settings,state,origin,created_at) VALUES(?,?,'queued',?,?)")
       .run(id, JSON.stringify(settings), new URL(settings.seeds[0]).origin, Date.now());
     const queue = createQueue(db, id, settings.limit);
     for (const url of settings.seeds) queue(url, 0, 0, "seed", "");
+    const insert = db.prepare("INSERT INTO input_rows(run,id,source,row,value,url,status) VALUES(?,?,?,?,?,?,?)");
+    for (const row of inputRows) insert.run(id, row.id, row.source, row.row, row.value, row.url, row.status);
     return id;
   });
 }

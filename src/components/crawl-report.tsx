@@ -7,7 +7,7 @@ import {
   ArrowDown, ArrowRight, ArrowUpDown, ChevronLeft, ChevronRight, CircleAlert, Download,
   FileText, GitCompare, Link2, Pause, Play, RotateCw, Route, Search, Square,
 } from "lucide-react";
-import { isActive, RULES } from "@/model";
+import { discoveryLabels, isActive, RULES } from "@/model";
 import type { Finding, IssueGroup, ListResult, PageRecord, RuleCode, RunSummary, SitemapRecord } from "@/model";
 import type { Change } from "@/queries";
 import { api, prettyDate, prettyNumber, ResponseStatus, RunStatus } from "./common";
@@ -184,6 +184,7 @@ export function CrawlReport({ id }: { id: string }) {
             </select>}
             {view !== "compare" && <a className="button button-outline button-small" href={exportUrl(view, publicParams)}><Download size={15} /> Export CSV</a>}
             {view === "urls" && <a className="button button-outline button-small" href={exportUrl("inlinks")}><Link2 size={15} /> Inlinks CSV</a>}
+            {view === "urls" && run.settings.mode === "list" && <a className="button button-outline button-small" href={exportUrl("input-rows")}><Download size={15} /> Input rows CSV</a>}
           </div>}
           {view === "findings" && rule && <div className="finding-description">
             <strong>{RULES[rule].title}</strong><p>{RULES[rule].explanation}</p>
@@ -217,7 +218,13 @@ function UrlsTable({ items, inspect, changeSort, sort, desc }: { items: PageReco
   return <div className="table-scroll" tabIndex={0} role="region" aria-label="Crawled URLs"><table className="data-table urls-table">
     <thead><tr>{columns.map(([key, label]) => <th key={key} aria-sort={sort === key ? desc ? "descending" : "ascending" : "none"}>
       <button onClick={() => changeSort(key)}>{label}{sort === key ? <ArrowDown className={desc ? "" : "rotate-up"} size={13} /> : <ArrowUpDown size={12} />}</button></th>)}</tr></thead>
-    <tbody>{items.map((item) => <tr key={item.url}><td><button className="table-url" onClick={() => inspect(item.url)}>{item.url}</button>{item.note && <small>{item.note}</small>}</td>
+    <tbody>{items.map((item) => <tr key={item.url}><td><button className="table-url" onClick={() => inspect(item.url)}>{item.url}</button>
+      <small className="url-discovery">
+        <span>{item.sources.map((kind) => discoveryLabels[kind]).join(", ") || "Unknown discovery"}</span>
+        <span>{item.scopeDecision}</span>
+        {item.discoverySource && <span className="url-discovery-source" title={item.discoverySource}>From {item.discoverySource}</span>}
+      </small>
+      {item.note && <small>{item.note}</small>}</td>
       <td><ResponseStatus status={item.http} state={item.state} /></td><td title={item.facts?.title}>{item.facts?.title || "—"}</td><td className="mono">{item.depth}</td><td className="mono">{item.inlinks}</td></tr>)}</tbody>
   </table></div>;
 }

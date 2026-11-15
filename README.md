@@ -24,7 +24,8 @@ pnpm setup:browser
 
 ## What SleuthSuite checks
 
-- **Discovery and coverage.** Crawl an origin or its starting path, or paste a migration URL list. Set the rate, depth and URL cap. Check robots rules and sitemap indexes, including compressed sitemap files. View skipped work and limits in the report.
+- **Discovery and coverage.** Crawl an origin or its starting path. See each URL’s discovery source and scope in the results, and see why outgoing links were excluded in page evidence. Set the rate, depth and URL cap. Check robots rules and sitemap indexes, including compressed sitemap files.
+- **URL list review.** Paste URLs or import CSV, TSV, TXT, Excel, or a Google Sheets link accessible without signing in. Review original values, normalized URLs, duplicates and rejected rows before crawling. List mode checks just the seeds and in-scope redirects by default. Turn on link discovery to follow each seed’s origin up to the depth limit. Export the input row mapping to reconcile results with the original list.
 - **Responses and links.** Find broken destinations, server and client errors, chains and loops. View response headers, redirect hops, and incoming and outgoing links with anchor text and HTML placement.
 - **Page and indexability signals.** Inspect titles, descriptions, headings, canonical and robots signals, exact duplicates, missing alt attributes, hreflang return links, and invalid JSON-LD syntax. Filter by finding, URL status or path group.
 - **Rendering and extraction.** Run Chromium for JavaScript pages and compare observed fields with the original HTML. Use simple CSS selectors to extract text or attribute values into the evidence and CSV.
