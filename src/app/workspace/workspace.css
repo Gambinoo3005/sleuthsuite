@@ -220,7 +220,8 @@
 .data-table td .icon-button { width: 27px; min-width: 27px; height: 28px; background: transparent; border-color: transparent; }
 .urls-table th:nth-child(1) { width: 42%; }
 .urls-table th:nth-child(2) { width: 101px; }
-.urls-table th:nth-child(4), .urls-table th:nth-child(5) { width: 62px; }
+.urls-table th:nth-child(4) { width: 62px; }
+.urls-table th:nth-child(5) { width: 90px; }
 .findings-table th:nth-child(1) { width: 24%; }
 .findings-table th:nth-child(2) { width: 39%; }
 .findings-table th:last-child { width: 43px; }
