@@ -16,7 +16,7 @@ export const stateLabel: Record<RunState, string> = {
 };
 
 export function RunStatus({ state }: { state: RunState }) {
-  return <span className={`state-pill state-${state}`}><i />{stateLabel[state]}</span>;
+  return <span className={`state-pill state-${state}`}><i className={state === "running" ? "state-spinner" : undefined} aria-hidden="true" />{stateLabel[state]}</span>;
 }
 
 export function ResponseStatus({ status, state }: { status: number | null; state?: UrlState }) {

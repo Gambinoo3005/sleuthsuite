@@ -167,7 +167,8 @@
 .scan-findings dl > div { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-top: 1px solid var(--line-soft); }
 .scan-findings dt { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
 .scan-findings dd { margin: 0; font: 500 13px var(--mono); }
-.report-frame { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.report-frame { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; overflow-anchor: none; }
+.report-results[inert] { opacity: .55; }
 .report-tabs { display: flex; min-height: 48px; padding-inline: 13px; gap: 15px; border-bottom: 1px solid var(--line); overflow-x: auto; }
 .report-tabs button, .evidence-tabs button {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 4px; white-space: nowrap;

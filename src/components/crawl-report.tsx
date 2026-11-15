@@ -38,7 +38,7 @@ export function CrawlReport({ id }: { id: string }) {
   const [sort, setSort] = useState<Sort | "">("");
   const [desc, setDesc] = useState(false);
   const [page, setPage] = useState(1);
-  const [loadedList, setLoadedList] = useState<{ key: string; value: ListResult<PageRecord | Finding | Change> } | null>(null);
+  const [loadedList, setLoadedList] = useState<{ scope: string; key: string; value: ListResult<PageRecord | Finding | Change> } | null>(null);
   const [sitemaps, setSitemaps] = useState<Sitemaps | null>(null);
   const [reportError, setReportError] = useState("");
   const [selectedUrl, selectUrl] = useState<string | null>(null);
@@ -69,8 +69,10 @@ export function CrawlReport({ id }: { id: string }) {
 
   const publicParams = new URLSearchParams({ page: String(page), q: debounced, filter, folder, code: rule, sort, dir: desc ? "desc" : "asc" }).toString();
   const reportParams = publicParams + `&baseline=${encodeURIComponent(baseline)}&map=${pathMapping ? "path" : "url"}`;
-  const reportKey = `${id}/${view}?${reportParams}`;
-  const list = loadedList?.key === reportKey ? loadedList.value : null;
+  const reportScope = `${id}/${view}`;
+  const reportKey = `${reportScope}?${reportParams}`;
+  const list = loadedList?.scope === reportScope ? loadedList.value : null;
+  const showingPreviousResults = list !== null && loadedList?.key !== reportKey;
   useEffect(() => {
     if (!updateKey || (view === "compare" && !baseline)) return;
     const controller = new AbortController();
@@ -78,12 +80,12 @@ export function CrawlReport({ id }: { id: string }) {
     const request = view === "sitemaps"
       ? api<Sitemaps>(`/${id}/sitemaps`, { signal: controller.signal }).then(setSitemaps)
       : api<ListResult<PageRecord | Finding | Change>>(`/${reportKey}`, { signal: controller.signal })
-        .then((value) => { if (!controller.signal.aborted) setLoadedList({ key: reportKey, value }); });
+        .then((value) => { if (!controller.signal.aborted) setLoadedList({ scope: reportScope, key: reportKey, value }); });
     void request.catch((error: Error) => {
       if (error.name !== "AbortError") setReportError(error.message);
     });
     return () => controller.abort();
-  }, [id, view, reportKey, updateKey, baseline]);
+  }, [id, view, reportScope, reportKey, updateKey, baseline]);
 
   useEffect(() => {
     if (view !== "compare" || sample) return;
@@ -189,7 +191,8 @@ export function CrawlReport({ id }: { id: string }) {
           {view === "sitemaps" && sitemaps && <SitemapView data={sitemaps} download={exportUrl("sitemap")} inspect={selectUrl} />}
           {view === "compare" && !baseline && <div className="results-empty"><GitCompare size={25} /><p>{baselines?.length ? "Choose a saved crawl to see the changes." : "Run another audit to compare saved results."}</p></div>}
           {!list && !reportError && (view !== "compare" || baseline) && (view !== "sitemaps" || !sitemaps) && <p className="table-note" role="status">Loading results…</p>}
-          {list && view !== "sitemaps" && (view !== "compare" || baseline) && <>
+          {list && view !== "sitemaps" && (view !== "compare" || baseline) && <div className="report-results"
+            aria-busy={showingPreviousResults && !reportError} inert={showingPreviousResults}>
             {view === "urls" && <UrlsTable items={list.items as PageRecord[]} inspect={selectUrl} changeSort={sortBy} sort={sort} desc={desc} />}
             {view === "findings" && <FindingsTable items={list.items as Finding[]} inspect={selectUrl} />}
             {view === "compare" && <ChangesTable items={list.items as Change[]} inspect={selectUrl} />}
@@ -197,7 +200,7 @@ export function CrawlReport({ id }: { id: string }) {
             <div className="pagination"><span>{list.total ? `${(list.page - 1) * list.size + 1}–${Math.min(list.page * list.size, list.total)} of ${prettyNumber(list.total)}` : "0 results"}</span>
               <div><button className="icon-button" aria-label="Previous results page" disabled={list.page <= 1} onClick={() => setPage(list.page - 1)}><ChevronLeft size={17} /></button>
                 <button className="icon-button" aria-label="Next results page" disabled={list.page * list.size >= list.total} onClick={() => setPage(list.page + 1)}><ChevronRight size={17} /></button></div></div>
-          </>}
+          </div>}
         </div>
       </div>
     </section>

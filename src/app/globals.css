@@ -169,6 +169,12 @@ svg { flex-shrink: 0; vertical-align: middle; }
   font: 500 11px var(--mono); white-space: nowrap;
 }
 .state-pill i { width: 6px; height: 6px; background: currentColor; border-radius: 50%; }
+.state-pill .state-spinner {
+  width: 10px; height: 10px; background: transparent;
+  border: 1.5px solid currentColor; border-right-color: transparent;
+  animation: state-spin .8s linear infinite;
+}
+@keyframes state-spin { to { transform: rotate(360deg); } }
 .response-good { background: #22382c; border-color: #3c5e4c; color: var(--green); }
 .response-warn { background: #382e20; border-color: #695234; color: var(--warning); }
 .response-bad { background: #3a252d; border-color: #6d414b; color: var(--error); }
