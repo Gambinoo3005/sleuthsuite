@@ -53,10 +53,9 @@
 .workspace .info-message { display: flex; align-items: flex-start; gap: 8px; border: 1px solid #c8dacf; color: #315842; background: #edf5ef; }
 .workspace .info-message a { text-decoration: underline; text-underline-offset: 3px; }
 
-.dashboard-grid { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(276px, 1fr); gap: 15px; align-items: start; }
 .crawl-form { padding: 20px; display: grid; gap: 17px; }
-.composer-heading, .sample-card-heading, .history-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.composer-heading h2, .sample-card-heading h2, .history-heading h2 { font-size: 20px; font-weight: 625; letter-spacing: -.032em; }
+.composer-heading, .history-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.composer-heading h2, .history-heading h2 { font-size: 20px; font-weight: 625; letter-spacing: -.032em; }
 .segmented { display: inline-flex; gap: 2px; padding: 3px; border-radius: 6px; background: #edf1ec; }
 .segmented button {
   display: inline-flex; justify-content: center; align-items: center; gap: 6px; padding: 6px 9px;
@@ -95,21 +94,6 @@
 .section-inline p { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.4; }
 .extraction-row { display: grid; grid-template-columns: 1fr 1.4fr 1fr auto; gap: 6px; align-items: center; margin-top: 8px; }
 .extraction-row input { width: 100%; }
-.sample-card {
-  display: flex; flex-direction: column; justify-content: space-between; align-self: stretch; gap: 17px;
-  min-width: 0; padding: 20px; border-radius: 8px; border: 1px solid #25392d; background: #1d2f25; color: #f0f7f2;
-}
-.sample-card:hover { background: #263b2f; }
-.sample-card-heading > svg { color: #b6f1ce; }
-.sample-card:focus-visible { outline-color: #176745; }
-.sample-trace {
-  display: grid; gap: 10px; padding: 11px 0; color: #c7ddce; border-block: 1px solid #526759;
-  font: 11px var(--mono); overflow-wrap: anywhere;
-}
-.sample-trace > span { display: flex; gap: 7px; align-items: center; }
-.sample-trace > span:nth-child(2) { color: #fff; padding-left: 6px; }
-.sample-trace .response { margin-left: auto; }
-.sample-card-action { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #b6f1ce; }
 .history-section { margin-top: 33px; }
 .history-heading { justify-content: flex-start; margin-bottom: 10px; }
 .history-heading > span { color: var(--muted); font-size: 12px; }
@@ -130,7 +114,6 @@
 .workspace .state-paused, .workspace .state-pausing, .workspace .state-stopping, .workspace .response-warn { background: #fcf1df; border-color: #e8d1a8; color: #835018; }
 .workspace .state-failed, .workspace .response-bad { background: #fbe9ea; border-color: #edc7cb; color: #972e39; }
 .workspace .response-neutral { background: #edf1ee; border-color: #d7ded8; color: #526157; }
-.sample-trace .response-bad { background: #482f34; border-color: #91646a; color: #ffd0d4; }
 .back-link { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 13px; margin-bottom: 14px; }
 .back-link:hover { color: var(--mint); }
 .report-main { padding-top: 23px; }
@@ -270,7 +253,6 @@
 .headers-list dt { font-family: var(--mono); overflow-wrap: anywhere; }
 
 @media (max-width: 900px) {
-  .dashboard-grid { grid-template-columns: minmax(0, 1.65fr) minmax(236px, 1fr); }
   .report-content.has-filters { grid-template-columns: 165px minmax(0, 1fr); }
 }
 
@@ -291,8 +273,8 @@
 
 @media (max-width: 585px) {
   .workspace-heading { align-items: flex-start; flex-direction: column; gap: 9px; margin-bottom: 15px; }
-  .dashboard-grid, .scan-summary { grid-template-columns: minmax(0, 1fr); }
-  .crawl-form, .sample-card { padding: 14px; gap: 13px; }
+  .scan-summary { grid-template-columns: minmax(0, 1fr); }
+  .crawl-form { padding: 14px; gap: 13px; }
   .scan-coverage { border-radius: 7px 7px 0 0; }
   .scan-findings { border: 1px solid var(--line); border-top: 0; border-radius: 0 0 7px 7px; }
   .scan-findings dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
