@@ -29,7 +29,7 @@ export function CrawlReport({ id }: { id: string }) {
   const [mainError, setMainError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionPending, setActionPending] = useState(false);
-  const [view, setView] = useState<View>("findings");
+  const [selectedView, setView] = useState<View | null>(null);
   const [rule, setRule] = useState<RuleCode | "">("");
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -46,12 +46,15 @@ export function CrawlReport({ id }: { id: string }) {
   const [baseline, setBaseline] = useState("");
   const [pathMapping, setPathMapping] = useState(false);
   const run = overview?.crawl;
+  const view = selectedView ?? "findings";
   const active = run ? isActive(run.state) && run.state !== "paused" : false;
   const updateKey = run ? `${run.state}:${run.discovered}:${run.checked}:${run.failed}:${run.skipped}:${run.findings}` : "";
 
   const refresh = useCallback(async () => {
     try {
-      setOverview(await api<Overview>(`/${id}`));
+      const next = await api<Overview>(`/${id}`);
+      setView((current) => current ?? (isActive(next.crawl.state) ? "urls" : "findings"));
+      setOverview(next);
       setMainError("");
     } catch (error) { setMainError((error as Error).message); }
   }, [id]);
