@@ -2,6 +2,8 @@ import type { CrawlSettings } from "../model.ts";
 
 export const USER_AGENT = "SleuthSuite/1.0";
 export const MAX_LINKS = 5_000;
+export const MAX_URL_LIST_LENGTH = 645_000;
+export const MAX_CRAWL_URLS = 10_000;
 
 export function normalizeUrl(value: string, base?: string): string | null {
   if (!value || value.length > 4096) return null;
@@ -20,7 +22,7 @@ export function parseSettings(input: unknown): CrawlSettings {
   const data = input as Record<string, unknown>;
   const mode = data.mode === "list" ? "list" : "site";
   const text = typeof data.urls === "string" ? data.urls.trim() : "";
-  if (!text || text.length > 645_000) throw new Error("Enter a URL or a list smaller than 645 KB.");
+  if (!text || text.length > MAX_URL_LIST_LENGTH) throw new Error("Enter a URL or a list smaller than 645 KB.");
   const lines = text.split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
   if (mode === "site" && lines.length !== 1) throw new Error("Website mode accepts one URL.");
   const urls = lines.map((line) => normalizeUrl(line));
@@ -32,7 +34,7 @@ export function parseSettings(input: unknown): CrawlSettings {
     if (!Number.isInteger(value) || value < lower || value > upper) throw new Error(`${key} must be between ${lower} and ${upper}.`);
     return value;
   };
-  const limit = bounded("limit", 1000, 1, 10_000);
+  const limit = bounded("limit", 1000, 1, MAX_CRAWL_URLS);
   if (seeds.length > limit) throw new Error("The URL list exceeds the crawl limit.");
   const start = new URL(seeds[0]);
   const scope = mode === "site" && data.scope === "path" ? "path" : "origin";

@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowUpRight, ChevronDown, CircleHelp, FileSearch, Globe, List, Plus, SlidersHorizontal, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, CircleHelp, FileSearch, Globe, List, Plus, SlidersHorizontal, Upload, X } from "lucide-react";
 import { isActive } from "@/model";
 import type { ExtractionRule, Mode, RunSummary } from "@/model";
 import { api, prettyDate, prettyNumber, RunStatus } from "./common";
+import { UrlImportDialog } from "./url-import-dialog";
 
 export function Dashboard() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export function Dashboard() {
   const [formError, setFormError] = useState("");
   const [mode, setMode] = useState<Mode>("site");
   const [urls, setUrls] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [rules, setRules] = useState<ExtractionRule[]>([]);
   const active = runs?.find((run) => isActive(run.state));
@@ -66,7 +68,11 @@ export function Dashboard() {
         </div>
       </div>
       <div className="field crawl-address-field">
-        <label htmlFor="crawl-address">{mode === "site" ? "Starting URL" : "URLs to check"}</label>
+        <div className="crawl-address-heading">
+          <label htmlFor="crawl-address">{mode === "site" ? "Starting URL" : "URLs to check"}</label>
+          {mode === "list" && <button type="button" className="button button-outline button-small"
+            aria-haspopup="dialog" onClick={() => setImportOpen(true)}><Upload size={14} /> Import file</button>}
+        </div>
         {mode === "site" ? <input id="crawl-address" name="address" type="url" placeholder="https://example.com/" value={urls.split("\n")[0]} required
           onChange={(event) => setUrls(event.target.value)} spellCheck={false} autoComplete="url" aria-describedby="crawl-address-help" /> :
           <textarea id="crawl-address" className="url-list-input" name="addresses" rows={3} placeholder={"https://example.com/old-page\nhttps://example.com/new-page"} value={urls} required
@@ -103,6 +109,11 @@ export function Dashboard() {
         {pending ? "Starting crawl…" : "Start crawl"} <ArrowRight size={17} />
       </button>
     </form>
+    {importOpen && <UrlImportDialog current={urls} onClose={() => setImportOpen(false)} onImport={(list) => {
+      setUrls(list);
+      setFormError("");
+      setImportOpen(false);
+    }} />}
     <section className="history-section" aria-labelledby="history-title">
       <div className="history-heading"><h2 id="history-title">Saved crawls</h2>{runs?.length ? <span className="mono">{runs.length}</span> : null}</div>
       {loadError && <div className="alert" role="alert">{loadError} <button className="text-button" onClick={() => void refresh()}>Retry</button></div>}

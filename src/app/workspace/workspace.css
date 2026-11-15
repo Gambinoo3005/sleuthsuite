@@ -66,6 +66,8 @@
 .crawl-form .launch-button { justify-self: end; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field > span, .field > label { font-size: 13px; font-weight: 560; }
+.crawl-address-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.crawl-address-heading label { font-size: 13px; font-weight: 560; }
 .field small { color: var(--muted); line-height: 1.5; font-size: 12px; }
 .workspace input:not([type="checkbox"]), .workspace textarea, .workspace select {
   min-width: 0; min-height: 38px; padding: 7px 9px; border: 1px solid #c6d2c8; border-radius: 5px;
@@ -274,6 +276,29 @@
 .headers-list { display: flex; flex-direction: column; gap: 8px; }
 .headers-list > div { display: grid; grid-template-columns: minmax(80px, .65fr) minmax(100px, 1fr); gap: 9px; padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
 .headers-list dt { font-family: var(--mono); overflow-wrap: anywhere; }
+
+.url-import-dialog {
+  width: min(450px, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 32px);
+  padding: 0; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--ink);
+  box-shadow: 0 16px 55px #142a203d;
+}
+.url-import-dialog::backdrop { background: #142a2073; }
+.url-import-content { padding: 19px; display: grid; gap: 12px; }
+.url-import-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.url-import-heading h2 { font-size: 21px; font-weight: 625; letter-spacing: -.03em; }
+.url-drop-zone {
+  display: grid; justify-items: center; gap: 9px; padding: 18px 12px;
+  text-align: center; background: #f7f9f6; border: 1px dashed #a5b6aa; border-radius: 7px;
+}
+.url-drop-zone[data-dragging="true"] { background: #e5f2e8; border-color: #176745; }
+.url-drop-zone > svg { color: var(--mint); }
+.url-drop-zone p { font-size: 14px; font-weight: 570; }
+.url-drop-zone small, .url-import-hint { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.url-import-preview { display: grid; gap: 6px; padding: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; overflow-wrap: anywhere; }
+.url-import-preview > div { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+.url-import-preview p { color: var(--muted); font-size: 12px; }
+.url-import-preview ul { margin: 0; padding: 0; list-style: none; color: var(--ink); font: 11px/1.55 var(--mono); }
+.url-import-actions { display: flex; justify-content: flex-end; gap: 7px; }
 
 @media (max-width: 900px) {
   .report-content.has-filters { grid-template-columns: 165px minmax(0, 1fr); }

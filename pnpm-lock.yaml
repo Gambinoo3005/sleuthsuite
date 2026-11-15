@@ -17,6 +17,9 @@ importers:
       cheerio:
         specifier: ^1.2.0
         version: 1.2.0
+      csv-parse:
+        specifier: ^7.0.3
+        version: 7.0.3
       ipaddr.js:
         specifier: ^2.5.0
         version: 2.5.0
@@ -447,6 +450,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  csv-parse@7.0.3:
+    resolution: {integrity: sha512-YFd3QM/yo17vH91L1IOZuvl09zM0zEEtdfTcOCKWcMdM++MNaQSyp09slXyFCLaPXvHstQFx/xC8myiFHSMUvw==}
 
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
@@ -898,6 +904,8 @@ snapshots:
   css-what@6.2.2: {}
 
   csstype@3.2.3: {}
+
+  csv-parse@7.0.3: {}
 
   detect-libc@2.1.2:
     optional: true
