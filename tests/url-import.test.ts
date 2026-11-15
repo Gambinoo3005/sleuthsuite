@@ -3,9 +3,9 @@ import { test } from "node:test";
 import { prepareUrlImport } from "../src/url-import.ts";
 
 test("reads the URL column in a quoted CSV and appends only new URLs", () => {
-  const result = prepareUrlImport("export.CSV", '\uFEFF"Title","Address"\r\n"Sale, today","https://example.com/shop"\r\n"Duplicate","https://example.com/shop#top"\r\n"Already present","https://example.com/"\r\n"Invalid","example.org"\r\n"Missing",', "https://example.com");
+  const result = prepareUrlImport("export.CSV", '\uFEFF"Title","Address"\r\n"Sale, today","example.com/shop"\r\n"Duplicate","https://example.com/shop#top"\r\n"Already present","https://example.com/"\r\n"Invalid","example"\r\n"Missing",', "example.com");
   assert.deepEqual(result.added, ["https://example.com/shop"]);
-  assert.equal(result.combined, "https://example.com\nhttps://example.com/shop");
+  assert.equal(result.combined, "example.com\nhttps://example.com/shop");
   assert.equal(result.duplicates, 2);
   assert.equal(result.invalid, 2);
 });

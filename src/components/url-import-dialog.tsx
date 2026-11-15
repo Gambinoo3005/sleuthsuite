@@ -86,7 +86,7 @@ export function UrlImportDialog({ current, onImport, onClose }: {
         }} />
         <small>CSV, TSV, or TXT · Up to 2 MB</small>
       </div>
-      <p className="url-import-hint">Use one URL per line in a text file, or a URL or Address column in a table.</p>
+      <p className="url-import-hint">Use one domain or URL per line in a text file, or a URL or Address column in a table.</p>
       {loading && <p className="url-import-hint" role="status">Reading file…</p>}
       {error && <p className="alert" role="alert">{error}</p>}
       {preview && <div className="url-import-preview" role="status">

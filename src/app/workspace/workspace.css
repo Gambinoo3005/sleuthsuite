@@ -101,7 +101,7 @@
   overflow-y: auto;
 }
 .workspace input[type="checkbox"] { width: 16px; height: 16px; accent-color: #176745; }
-.workspace .crawl-address-field input[type="url"] { min-height: 43px; font-family: var(--mono); }
+.workspace .crawl-address-field input { min-height: 43px; font-family: var(--mono); }
 .form-details { border-top: 1px solid var(--line-soft); }
 .form-details summary {
   display: flex; justify-content: space-between; align-items: center; min-height: 31px; padding-top: 8px;

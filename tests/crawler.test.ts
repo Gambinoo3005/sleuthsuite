@@ -9,6 +9,17 @@ import { normalizeUrl, parseSettings } from "../src/crawler/urls.ts";
 import { createRun, getRun, openDatabase, setRunState } from "../src/db.ts";
 import { compareRuns, evidence, findings, makeExport, pages, resources, xmlCandidates } from "../src/queries.ts";
 
+test("uses HTTPS for complete bare domains and preserves explicit HTTP", () => {
+  assert.deepEqual(parseSettings({ urls: "example.com" }).seeds, ["https://example.com/"]);
+  const rows = "www.example.com.au/shop?ref=one\nexample.ph\nhttp://example.com\nexample.com";
+  assert.deepEqual(parseSettings({ mode: "list", urls: rows }).seeds, [
+    "https://www.example.com.au/shop?ref=one", "https://example.ph/", "http://example.com/", "https://example.com/",
+  ]);
+  for (const input of ["example", "example..com", "/example.com", "localhost", "127.0.0.1", "ftp://example.com"]) {
+    assert.throws(() => parseSettings({ urls: input }), /Enter a complete domain/);
+  }
+});
+
 test("crawl, pause and recover evidence across a sitemap, redirects and robots rules", async () => {
   const site = await fixture();
   const db = openDatabase(":memory:");

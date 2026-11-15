@@ -17,6 +17,21 @@ export function normalizeUrl(value: string, base?: string): string | null {
   }
 }
 
+export function normalizeCrawlUrl(input: string): string | null {
+  const value = input.trim();
+  if (!value || /[\r\n\t]/.test(value)) return null;
+  if (/^https?:\/\//i.test(value)) return normalizeUrl(value);
+  if (/^[/?#\\]/.test(value)) return null;
+
+  const url = normalizeUrl("https://" + value);
+  if (!url) return null;
+  const hostname = new URL(url).hostname.replace(/\.$/, "");
+  const labels = hostname.split(".");
+  const suffix = labels.at(-1) ?? "";
+  const validLabels = labels.every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label));
+  return hostname.length <= 253 && labels.length > 1 && validLabels && /^(?:[a-z]{2,63}|xn--[a-z0-9-]+)$/.test(suffix) ? url : null;
+}
+
 export function parseSettings(input: unknown): CrawlSettings {
   if (!input || typeof input !== "object") throw new Error("Enter a website address or URL list.");
   const data = input as Record<string, unknown>;
@@ -25,9 +40,9 @@ export function parseSettings(input: unknown): CrawlSettings {
   if (!text || text.length > MAX_URL_LIST_LENGTH) throw new Error("Enter a URL or a list smaller than 645 KB.");
   const lines = text.split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
   if (mode === "site" && lines.length !== 1) throw new Error("Website mode accepts one URL.");
-  const urls = lines.map((line) => normalizeUrl(line));
+  const urls = lines.map(normalizeCrawlUrl);
   const invalid = lines.filter((_, index) => urls[index] === null);
-  if (invalid.length) throw new Error(`Enter valid HTTP or HTTPS URLs. Check: ${invalid.slice(0, 3).join(", ").slice(0, 200)}`);
+  if (invalid.length) throw new Error(`Enter a complete domain or a valid HTTP or HTTPS URL. Check: ${invalid.slice(0, 3).join(", ").slice(0, 200)}`);
   const seeds = [...new Set(urls as string[])];
   const bounded = (key: string, fallback: number, lower: number, upper: number) => {
     const value = data[key] === "" || data[key] == null ? fallback : Number(data[key]);

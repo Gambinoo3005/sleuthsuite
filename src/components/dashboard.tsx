@@ -73,11 +73,11 @@ export function Dashboard() {
           {mode === "list" && <button type="button" className="button button-outline button-small"
             aria-haspopup="dialog" onClick={() => setImportOpen(true)}><Upload size={14} /> Import file</button>}
         </div>
-        {mode === "site" ? <input id="crawl-address" name="address" type="url" placeholder="https://example.com/" value={urls.split("\n")[0]} required
-          onChange={(event) => setUrls(event.target.value)} spellCheck={false} autoComplete="url" aria-describedby="crawl-address-help" /> :
+        {mode === "site" ? <input id="crawl-address" name="address" type="text" inputMode="url" placeholder="example.com" value={urls.split("\n")[0]} required
+          onChange={(event) => setUrls(event.target.value)} spellCheck={false} autoCapitalize="none" autoComplete="url" aria-describedby="crawl-address-help" /> :
           <textarea id="crawl-address" className="url-list-input" name="addresses" rows={3} placeholder={"https://example.com/old-page\nhttps://example.com/new-page"} value={urls} required
             onChange={(event) => setUrls(event.target.value)} spellCheck={false} aria-describedby="crawl-address-help" />}
-        <small id="crawl-address-help">{mode === "site" ? "Discovers links on the starting origin." : "Enter one absolute URL per line."}</small>
+        <small id="crawl-address-help">{mode === "site" ? "Enter a domain or full URL. HTTPS is used by default." : "Enter one domain or URL per line."}</small>
       </div>
       {formError && <p className="alert" role="alert">{formError}</p>}
       {active && <div className="info-message"><CircleHelp size={17} /><span><Link href={`/workspace/crawls/${active.id}`}>{active.settings.name}</Link> is active. Finish or stop it to start another crawl.</span></div>}

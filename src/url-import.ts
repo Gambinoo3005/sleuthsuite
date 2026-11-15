@@ -1,5 +1,5 @@
 import { parse } from "csv-parse/browser/esm/sync";
-import { MAX_CRAWL_URLS, MAX_URL_LIST_LENGTH, normalizeUrl } from "./crawler/urls.ts";
+import { MAX_CRAWL_URLS, MAX_URL_LIST_LENGTH, normalizeCrawlUrl } from "./crawler/urls.ts";
 
 const urlHeaders = new Set(["url", "urls", "address", "pageurl", "pageaddress", "websiteurl"]);
 
@@ -25,13 +25,13 @@ export function prepareUrlImport(filename: string, text: string, current: string
   }
   const values = extension === "txt" ? text.replace(/^\uFEFF/, "").split(/\r\n|\n|\r/) :
     readColumn(text, extension === "tsv" ? "\t" : ",");
-  const seen = new Set(current.split(/\r?\n/).map((line) => normalizeUrl(line.trim())).filter(Boolean));
+  const seen = new Set(current.split(/\r?\n/).map(normalizeCrawlUrl).filter(Boolean));
   const added: string[] = [];
   let duplicates = 0;
   let invalid = 0;
   for (const raw of values) {
     const value = raw.trim();
-    const url = /^https?:\/\//i.test(value) && !/[\r\n\t]/.test(value) ? normalizeUrl(value) : null;
+    const url = normalizeCrawlUrl(value);
     if (!url) {
       if (value || extension !== "txt") invalid++;
     } else if (seen.has(url)) {
