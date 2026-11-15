@@ -70,7 +70,7 @@ export function Dashboard() {
           <label htmlFor="crawl-address">{mode === "site" ? "Starting URL" : "URLs to check"}</label>
           {mode === "site" ? <input id="crawl-address" name="address" type="url" placeholder="https://example.com/" value={urls.split("\n")[0]} required
             onChange={(event) => setUrls(event.target.value)} spellCheck={false} autoComplete="url" aria-describedby="crawl-address-help" /> :
-            <textarea id="crawl-address" name="addresses" rows={4} placeholder={"https://example.com/old-page\nhttps://example.com/new-page"} value={urls} required
+            <textarea id="crawl-address" className="url-list-input" name="addresses" rows={3} placeholder={"https://example.com/old-page\nhttps://example.com/new-page"} value={urls} required
               onChange={(event) => setUrls(event.target.value)} spellCheck={false} aria-describedby="crawl-address-help" />}
           <small id="crawl-address-help">{mode === "site" ? "Discovers links on the starting origin." : "Enter one absolute URL per line."}</small>
         </div>

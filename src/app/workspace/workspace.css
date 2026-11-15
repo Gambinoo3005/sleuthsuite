@@ -74,7 +74,14 @@
   background: #fff; color: var(--ink); font-size: 13px;
 }
 .workspace input::placeholder, .workspace textarea::placeholder { color: #68776c; }
-.workspace textarea { resize: vertical; line-height: 1.5; }
+.workspace .url-list-input {
+  resize: none;
+  field-sizing: content;
+  line-height: 1.5;
+  min-height: calc(3lh + 16px);
+  max-height: calc(10lh + 16px);
+  overflow-y: auto;
+}
 .workspace input[type="checkbox"] { width: 16px; height: 16px; accent-color: #176745; }
 .compose-target input:not([type="checkbox"]) { min-height: 43px; font-family: var(--mono); }
 .form-details { border-top: 1px solid var(--line-soft); }
