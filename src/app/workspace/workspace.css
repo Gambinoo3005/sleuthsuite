@@ -36,8 +36,6 @@
 .workspace-nav-shell nav a:hover { background: #2c3e33; color: #fff; }
 .workspace-nav-shell nav a[data-active="true"] { background: #31473a; color: #d2f6df; }
 .workspace-nav-shell a:focus-visible { outline-color: #b6f1ce; }
-.workspace-local { margin-top: auto; display: flex; gap: 5px; align-items: center; color: #c2d1c6; font-size: 10px; }
-.workspace-local span { width: 6px; height: 6px; border-radius: 50%; background: #aadeba; }
 .work-main { width: min(1378px, 100%); margin-inline: auto; padding: 37px clamp(21px, 3.6vw, 52px) 58px; }
 .workspace-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .workspace-heading h1 { font-size: clamp(32px, 4vw, 46px); line-height: 1.08; letter-spacing: -.055em; font-weight: 645; overflow-wrap: anywhere; }
@@ -64,8 +62,7 @@
 }
 .segmented button[aria-pressed="true"] { background: white; color: #1d5136; border-color: #c9d8cd; }
 .segmented button:hover { color: var(--ink); }
-.compose-target { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
-.compose-target .launch-button { margin-top: 24px; min-height: 43px; }
+.crawl-form .launch-button { justify-self: end; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field > span, .field > label { font-size: 13px; font-weight: 560; }
 .field small { color: var(--muted); line-height: 1.5; font-size: 12px; }
@@ -83,7 +80,7 @@
   overflow-y: auto;
 }
 .workspace input[type="checkbox"] { width: 16px; height: 16px; accent-color: #176745; }
-.compose-target input:not([type="checkbox"]) { min-height: 43px; font-family: var(--mono); }
+.workspace .crawl-address-field input[type="url"] { min-height: 43px; font-family: var(--mono); }
 .form-details { border-top: 1px solid var(--line-soft); }
 .form-details summary {
   display: flex; justify-content: space-between; align-items: center; min-height: 31px; padding-top: 8px;
@@ -270,7 +267,6 @@
   .workspace-nav-shell nav a { flex-direction: row; min-height: 35px; padding: 5px 9px; font-size: 11px; }
   .workspace-nav-shell nav a svg { width: 14px; height: 14px; }
   .workspace-nav-shell .brand-mark { width: 33px; height: 33px; }
-  .workspace-local { margin: 0 0 0 auto; }
   .work-main { padding: 23px 14px 44px; }
   .report-content.has-filters { grid-template-columns: minmax(0, 1fr); }
   .finding-rail { display: flex; gap: 4px; padding: 7px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
@@ -296,8 +292,6 @@
 }
 
 @media (max-width: 355px) {
-  .workspace-local { display: none; }
   .composer-heading { flex-wrap: wrap; }
-  .compose-target .launch-button { padding-inline: 8px; }
   .report-tabs button svg { display: none; }
 }

@@ -22,6 +22,5 @@ export function WorkspaceNavigation() {
         <Icon size={19} strokeWidth={1.7} /><span>{label}</span>
       </Link>)}
     </nav>
-    <div className="workspace-local" title="Crawls run on this machine"><span /> Local</div>
   </aside>;
 }
