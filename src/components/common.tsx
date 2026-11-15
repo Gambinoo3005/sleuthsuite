@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, ScanSearch } from "lucide-react";
+import { ScanSearch } from "lucide-react";
 import type { RunState, UrlState } from "@/model";
 
 export function Brand() {
@@ -9,16 +9,6 @@ export function Brand() {
   </Link>;
 }
 
-export function WorkspaceHeader() {
-  return <header className="workspace-header">
-    <div className="workspace-header-inner">
-      <Brand /><span className="top-divider" />
-      <Link className="workspace-nav" href="/workspace">Workspace</Link>
-      <Link className="workspace-nav sample-nav" href="/workspace/crawls/sample">Sample audit <ArrowUpRight size={13} /></Link>
-      <span className="local-label"><i /> Local workspace</span>
-    </div>
-  </header>;
-}
 
 export const stateLabel: Record<RunState, string> = {
   queued: "Queued", running: "Crawling", pausing: "Pausing", paused: "Paused",

@@ -4,14 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowDown, ArrowLeft, ArrowRight, ArrowUpDown, ChevronLeft, ChevronRight, CircleAlert, Download,
-  FileText, GitCompare, Link2, ListChecks, Pause, Play, RotateCw, Route, Search, Square,
+  ArrowDown, ArrowRight, ArrowUpDown, ChevronLeft, ChevronRight, CircleAlert, Download,
+  FileText, GitCompare, Link2, Pause, Play, RotateCw, Route, Search, Square,
 } from "lucide-react";
 import { isActive, RULES } from "@/model";
 import type { Finding, IssueGroup, ListResult, PageRecord, RuleCode, RunSummary, SitemapRecord } from "@/model";
 import type { Change } from "@/queries";
 import { api, prettyDate, prettyNumber, ResponseStatus, RunStatus } from "./common";
 import { EvidenceDrawer } from "./evidence-drawer";
+import { CrawlSummary } from "./crawl-summary";
 
 type View = "findings" | "urls" | "sitemaps" | "compare";
 type Sort = "url" | "http" | "title" | "depth" | "inlinks";
@@ -117,21 +118,23 @@ export function CrawlReport({ id }: { id: string }) {
   }
 
   if (!run) return <main id="content" className="work-main">
-    <Link className="back-link" href="/workspace"><ArrowLeft size={16} /> Workspace</Link>
+    <Link className="back-link" href="/workspace"><ChevronLeft size={16} /> Crawls</Link>
     <div className="work-card report-loading">{mainError ? <p className="alert" role="alert">{mainError}</p> : <p role="status">Loading crawl report…</p>}</div>
   </main>;
 
   const groups = [...(overview?.issues ?? [])].sort((a, b) => order[RULES[a.code].severity] - order[RULES[b.code].severity] || b.count - a.count);
-  const complete = run.checked + run.skipped + run.failed + run.cancelled;
-  const coverageIncomplete = run.truncated || run.failed > 0 || run.skipped > 0 || run.cancelled > 0;
   const exportUrl = (kind: string, params = "") => `/api/crawls/${id}/export?kind=${kind}${params ? "&" + params : ""}`;
 
   return <main id="content" className="work-main report-main">
-    <Link className="back-link" href="/workspace"><ArrowLeft size={15} /> Workspace</Link>
+    <Link className="back-link" href="/workspace"><ChevronLeft size={15} /> Crawls</Link>
     <div className="workspace-heading report-heading">
-      <div><div className="work-eyebrow"><ListChecks size={15} /> {sample ? "SAMPLE AUDIT" : run.settings.mode === "site" ? "WEBSITE AUDIT" : "URL LIST AUDIT"}</div>
+      <div>
         <div className="run-heading"><h1>{run.settings.name}</h1><RunStatus state={run.state} /></div>
-        <p className="run-subtitle"><span className="mono">{run.origin}</span><span>·</span><span>{run.settings.rendering === "chromium" ? "Chromium" : "HTML"}</span>{!sample && <><span>·</span>{prettyDate(run.createdAt)}</>}</p></div>
+        <p className="run-subtitle"><span className="mono">{run.origin}</span><span aria-hidden="true">·</span>
+          <span>{sample ? "Sample audit" : run.settings.mode === "site" ? "Website crawl" : "URL list"}</span>
+          <span aria-hidden="true">·</span><span>{run.settings.rendering === "chromium" ? "Chromium" : "HTML"}</span>
+          {!sample && <><span aria-hidden="true">·</span>{prettyDate(run.createdAt)}</>}</p>
+      </div>
       {!sample && <div className="report-actions">
         {(run.state === "running" || run.state === "queued") && <button className="button button-outline" disabled={actionPending} onClick={() => void command("pause")}><Pause size={15} /> Pause</button>}
         {run.state === "paused" && <button className="button button-primary" disabled={actionPending} onClick={() => void command("resume")}><Play size={15} /> Resume</button>}
@@ -140,12 +143,7 @@ export function CrawlReport({ id }: { id: string }) {
       </div>}
     </div>
     {(mainError || actionError || run.message) && <p className="alert" role="alert">{mainError || actionError || run.message}</p>}
-    <div className="audit-metrics">
-      {[["Discovered", run.discovered], ["Checked", run.checked], ["Queued", run.queued], ["Excluded / failed", run.skipped + run.failed + run.cancelled], ["Findings", run.findings]].map(([label, value]) =>
-        <div className="audit-metric" key={label}><span>{label}</span><strong>{prettyNumber(Number(value))}</strong></div>)}
-    </div>
-    {isActive(run.state) && <div className="progress-line"><progress value={complete} max={Math.max(1, run.discovered)} aria-label="Crawl progress" /><span>{complete} of {run.discovered} discovered URLs processed</span></div>}
-    {coverageIncomplete && <p className="report-note"><CircleAlert size={15} /> Coverage is incomplete. {run.truncated ? "A crawl limit was reached. " : ""}{run.skipped} skipped, {run.failed} failed, {run.cancelled} cancelled.</p>}
+    <CrawlSummary run={run} groups={groups} />
     <section className="report-frame">
       <div className="report-tabs" aria-label="Report views">
         {viewList.filter((item) => item.id !== "compare" || !sample).map(({ id: key, label, icon: Icon }) =>
@@ -153,6 +151,7 @@ export function CrawlReport({ id }: { id: string }) {
       </div>
       <div className={`report-content ${view === "findings" ? "has-filters" : ""}`}>
         {view === "findings" && <aside className="finding-rail" aria-label="Filter findings">
+          <h2>Issue type</h2>
           <button aria-pressed={rule === ""} onClick={() => chooseRule("")}><span>All findings</span><b>{run.findings}</b></button>
           {groups.map(({ code, count }) => <button key={code} aria-pressed={rule === code} onClick={() => chooseRule(code)}>
             <span><i className={`severity-dot severity-${RULES[code].severity}`} />{RULES[code].title}</span><b>{count}</b></button>)}

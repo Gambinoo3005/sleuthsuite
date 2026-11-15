@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowUpRight, ChevronDown, CircleHelp, FileSearch, Globe, List, Plus, ScanSearch, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, CircleHelp, CornerDownRight, FileSearch, Globe, List, Plus, SlidersHorizontal, X } from "lucide-react";
 import { isActive } from "@/model";
 import type { ExtractionRule, Mode, RunSummary } from "@/model";
-import { api, prettyDate, prettyNumber, RunStatus } from "./common";
+import { api, prettyDate, prettyNumber, ResponseStatus, RunStatus } from "./common";
 
 export function Dashboard() {
   const router = useRouter();
@@ -56,26 +56,33 @@ export function Dashboard() {
   }
 
   return <main id="content" className="work-main">
-    <div className="workspace-heading"><div><div className="work-eyebrow"><ScanSearch size={15} /> TECHNICAL SEO</div>
-      <h1>Audit workspace</h1><p>Start a crawl or investigate a saved result.</p></div>
-      <Link href="/workspace/crawls/sample" className="button button-outline">Open sample audit <ArrowUpRight size={16} /></Link>
-    </div>
+    <div className="workspace-heading"><h1>Crawls</h1></div>
     <div className="dashboard-grid">
-      <section className="work-card crawl-card"><div className="section-card-heading"><span className="card-icon"><Plus size={20} /></span><div><h2>New crawl</h2><p>Choose how SleuthSuite should discover pages.</p></div></div>
-        <form onSubmit={submit} className="crawl-form">
-          <div className="segmented" aria-label="Crawl mode">
+      <form onSubmit={submit} className="work-card crawl-form" aria-labelledby="new-crawl-title">
+        <div className="composer-heading">
+          <h2 id="new-crawl-title">New crawl</h2>
+          <div className="segmented" role="group" aria-label="Crawl mode">
             <button type="button" aria-pressed={mode === "site"} onClick={() => { setMode("site"); setUrls((current) => current.split(/\r?\n/)[0]); setFormError(""); }}><Globe size={16} /> Website</button>
             <button type="button" aria-pressed={mode === "list"} onClick={() => { setMode("list"); setFormError(""); }}><List size={16} /> URL list</button>
           </div>
-          <label className="field"><span>{mode === "site" ? "Starting URL" : "URLs to check"}</span>
-            {mode === "site" ? <input name="address" type="url" placeholder="https://example.com/" value={urls.split("\n")[0]} required
-              onChange={(event) => setUrls(event.target.value)} spellCheck={false} autoComplete="url" /> :
-              <textarea name="addresses" rows={4} placeholder={"https://example.com/old-page\nhttps://example.com/new-page"} value={urls} required
-                onChange={(event) => setUrls(event.target.value)} spellCheck={false} />}
-            <small>{mode === "site" ? "Discovers links on the starting origin. Public HTTP(S) sites are supported." : "Use one absolute URL per line. The crawler checks those URLs and their same-origin redirects."}</small>
-          </label>
+        </div>
+        <div className="compose-target">
+          <div className="field">
+            <label htmlFor="crawl-address">{mode === "site" ? "Starting URL" : "URLs to check"}</label>
+            {mode === "site" ? <input id="crawl-address" name="address" type="url" placeholder="https://example.com/" value={urls.split("\n")[0]} required
+              onChange={(event) => setUrls(event.target.value)} spellCheck={false} autoComplete="url" aria-describedby="crawl-address-help" /> :
+              <textarea id="crawl-address" name="addresses" rows={4} placeholder={"https://example.com/old-page\nhttps://example.com/new-page"} value={urls} required
+                onChange={(event) => setUrls(event.target.value)} spellCheck={false} aria-describedby="crawl-address-help" />}
+            <small id="crawl-address-help">{mode === "site" ? "Discovers links on the starting origin." : "Enter one absolute URL per line."}</small>
+          </div>
+          <button className="button button-primary launch-button" type="submit" disabled={pending || Boolean(active)}>
+            {pending ? "Starting crawl…" : "Start crawl"} <ArrowRight size={17} />
+          </button>
+        </div>
+        {formError && <p className="alert" role="alert">{formError}</p>}
+        {active && <div className="info-message"><CircleHelp size={17} /><span><Link href={`/workspace/crawls/${active.id}`}>{active.settings.name}</Link> is active. Finish or stop it to start another crawl.</span></div>}
           <details className="form-details">
-            <summary>Crawl settings <ChevronDown size={16} /></summary>
+            <summary><span><SlidersHorizontal size={16} /> Crawl settings</span><ChevronDown size={16} /></summary>
             <div className="settings-grid">
               <label className="field"><span>Crawl name</span><input name="name" placeholder="Optional" maxLength={85} /></label>
               <label className="field"><span>Rendering mode</span><select name="rendering"><option value="html">HTML</option><option value="chromium">Chromium</option></select></label>
@@ -98,24 +105,32 @@ export function Dashboard() {
               </div>)}
             </div>
           </details>
-          {formError && <p className="alert" role="alert">{formError}</p>}
-          {active && <div className="info-message"><CircleHelp size={17} /><span><Link href={`/workspace/crawls/${active.id}`}>{active.settings.name}</Link> is active. Finish or stop it to start another crawl.</span></div>}
-          <button className="button button-primary launch-button" type="submit" disabled={pending || Boolean(active)}>
-            {pending ? "Starting crawl…" : "Start crawl"} <ArrowRight size={17} />
-          </button>
-        </form>
-      </section>
-      <section className="work-card history-card"><div className="section-card-heading"><span className="card-icon"><FileSearch size={19} /></span><div><h2>Saved crawls</h2><p>Open a run to review its findings and exports.</p></div></div>
-        {loadError && <div className="alert" role="alert">{loadError} <button className="text-button" onClick={() => void refresh()}>Retry</button></div>}
-        {runs === null && !loadError && <p className="muted">Loading saved crawls…</p>}
-        {runs?.length === 0 && <div className="empty-state"><FileSearch size={31} /><h3>No saved crawls yet</h3><p>Your first crawl will appear here.</p><Link href="/workspace/crawls/sample">Explore an example <ArrowUpRight size={14} /></Link></div>}
-        {runs && runs.length > 0 && <div className="run-list">
-          {runs.map((run) => <Link className="saved-run" href={`/workspace/crawls/${run.id}`} key={run.id}>
-            <div><strong>{run.settings.name}</strong><span>{prettyDate(run.createdAt)} · {prettyNumber(run.discovered)} URLs · {prettyNumber(run.findings)} findings</span></div>
-            <RunStatus state={run.state} /><ArrowUpRight className="saved-arrow" size={15} />
-          </Link>)}
-        </div>}
-      </section>
+      </form>
+      <Link href="/workspace/crawls/sample" className="sample-card">
+        <div className="sample-card-heading"><h2>Sample audit</h2><ArrowUpRight size={18} /></div>
+        <div className="sample-trace">
+          <span><Globe size={14} /> northstar.example/guides</span>
+          <span><CornerDownRight size={15} /> /guides/old-setup <ResponseStatus status={404} /></span>
+        </div>
+        <span className="sample-card-action">See the source of a broken link <ArrowRight size={15} /></span>
+      </Link>
     </div>
+    <section className="history-section" aria-labelledby="history-title">
+      <div className="history-heading"><h2 id="history-title">Saved crawls</h2>{runs?.length ? <span className="mono">{runs.length}</span> : null}</div>
+      {loadError && <div className="alert" role="alert">{loadError} <button className="text-button" onClick={() => void refresh()}>Retry</button></div>}
+      {runs === null && !loadError && <p className="table-note" role="status">Loading saved crawls…</p>}
+      {runs?.length === 0 && <div className="empty-state"><FileSearch size={22} strokeWidth={1.5} /><span>No crawls yet. Start one above to save a report here.</span></div>}
+      {runs && runs.length > 0 && <div className="table-scroll history-table" tabIndex={0} role="region" aria-label="Saved crawl history">
+        <table className="data-table"><thead><tr><th scope="col">Crawl</th><th scope="col">Status</th><th scope="col">URLs</th><th scope="col">Findings</th><th scope="col">Started</th></tr></thead>
+          <tbody>{runs.map((run) => <tr className="saved-run" key={run.id}>
+            <td><Link href={`/workspace/crawls/${run.id}`}>{run.settings.name} <ArrowUpRight size={14} /></Link><small>{run.origin}</small></td>
+            <td><RunStatus state={run.state} /></td>
+            <td className="mono">{prettyNumber(run.discovered)}</td>
+            <td className="mono">{prettyNumber(run.findings)}</td>
+            <td>{prettyDate(run.createdAt)}</td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
+    </section>
   </main>;
 }

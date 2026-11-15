@@ -2,6 +2,10 @@ import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight, Braces, ChevronDown, Download, Fingerprint, GitPullRequest, HardDrive, Link2, ScanSearch } from "lucide-react";
 import { Brand } from "@/components/common";
 import { LandingPreview } from "@/components/landing-preview";
+import { severityCounts } from "@/components/crawl-summary";
+import { getRun } from "@/db";
+import { issueGroups } from "@/queries";
+import { SAMPLE_ID, sampleDatabase } from "@/sample";
 
 const steps = [
   { icon: ScanSearch, title: "Crawl the site", text: "Start at a URL or paste a migration list. Set the scope and rate, then watch pages and redirects appear as they’re checked." },
@@ -10,6 +14,9 @@ const steps = [
 ];
 
 export default function Home() {
+  const db = sampleDatabase();
+  const sample = getRun(db, SAMPLE_ID)!;
+  const counts = severityCounts(issueGroups(db, SAMPLE_ID));
   return <div className="landing">
     <a className="skip-link" href="#content">Skip to content</a>
     <header className="landing-header">
@@ -31,8 +38,8 @@ export default function Home() {
             <a className="button button-quiet" href="#sample">Explore a sample <ArrowDown size={16} /></a>
           </div>
           <div id="sample" className="preview-wrap">
-            <LandingPreview />
-            <div className="preview-foot"><span><i /> INTERACTIVE SAMPLE</span><span>LOCAL CRAWLS · SAVED EVIDENCE</span></div>
+            <LandingPreview checked={sample.checked} discovered={sample.discovered} findings={sample.findings}
+              errors={counts.error} warnings={counts.warning} />
           </div>
         </div>
       </section>
