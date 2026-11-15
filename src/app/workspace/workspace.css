@@ -219,11 +219,11 @@
 .data-table tbody tr:hover { background: #f5f8f4; }
 .data-table td small { display: block; color: var(--muted); margin-top: 3px; }
 .data-table td .icon-button { width: 27px; min-width: 27px; height: 28px; background: transparent; border-color: transparent; }
-.urls-table th:nth-child(1) { width: 38%; }
+.urls-table th:nth-child(1) { width: 40%; }
 .urls-table th:nth-child(2) { width: 112px; }
 .urls-table th:nth-child(4) { width: 76px; }
-.urls-table th:nth-child(5) { width: 108px; }
-.urls-table th:last-child button { white-space: nowrap; }
+.urls-table th:nth-child(5) { width: 80px; }
+.urls-table th:last-child button { width: 100%; justify-content: space-between; white-space: nowrap; }
 .findings-table th:nth-child(1) { width: 24%; }
 .findings-table th:nth-child(2) { width: 39%; }
 .findings-table th:last-child { width: 43px; }
